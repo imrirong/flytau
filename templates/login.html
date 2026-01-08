@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+
+{% block title %}התחברות - FLYTAU{% endblock %}
+
+{% block content %}
+<div class="container" dir="rtl">
+  <div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white text-end">
+          <h1 class="h4 mb-0">התחברות</h1>
+        </div>
+
+        <div class="card-body text-end">
+
+          <ul class="nav nav-pills mb-3 justify-content-center gap-2" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#customer" type="button">
+                לקוח רשום (אימייל)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="pill" data-bs-target="#manager" type="button">
+                מנהל (ת״ז)
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+
+            <div class="tab-pane fade show active" id="customer">
+              <form method="post">
+                <div class="mb-3">
+                  <label class="form-label w-100 text-end">אימייל</label>
+                  <input type="email" name="email" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label w-100 text-end">סיסמה</label>
+                  <input type="password" name="password" class="form-control" required>
+                </div>
+
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-primary fw-bold">התחבר</button>
+                </div>
+              </form>
+
+              <div class="text-center mt-3">
+                <a href="{{ url_for('register') }}">אין לך חשבון? הרשמה</a>
+              </div>
+            </div>
+
+            <div class="tab-pane fade" id="manager">
+              <form method="post">
+                <div class="mb-3">
+                  <label class="form-label w-100 text-end">תעודת זהות</label>
+                  <input type="text" name="email" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label w-100 text-end">סיסמה</label>
+                  <input type="password" name="password" class="form-control" required>
+                </div>
+
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-primary fw-bold">התחבר כמנהל</button>
+                </div>
+              </form>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

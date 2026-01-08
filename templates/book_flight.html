@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+{% block title %}הזמנת טיסה - FLYTAU{% endblock %}
+
+{% block content %}
+<div class="container mt-4" dir="rtl">
+  <div class="row g-4">
+
+    <!-- פרטי הטיסה -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white text-end">
+          פרטי הטיסה
+        </div>
+        <div class="card-body text-end">
+          <p><strong>מסלול:</strong> {{ flight.origin }} → {{ flight.destination }}</p>
+          <p><strong>תאריך:</strong> {{ flight.departure_date }}</p>
+          <p><strong>שעת המראה:</strong> {{ flight.departure_time }}</p>
+          <p><strong>משך הטיסה:</strong> {{ flight.route_duration }} דקות</p>
+          <hr>
+          <p class="mb-1"><strong>מחיר תיירים:</strong> {{ flight.price_economy }}₪</p>
+          {% if flight.price_business and flight.price_business > 0 %}
+            <p class="mb-0"><strong>מחיר עסקים:</strong> {{ flight.price_business }}₪</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- בחירת מושבים -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white text-end">
+          בחירת מושבים
+        </div>
+
+        <div class="card-body text-end">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'error' else 'danger' }} mb-3">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          <div class="alert alert-info">
+            בחר/י מושב אחד לפחות.
+          </div>
+
+          <form method="POST" id="seatForm">
+
+            <!-- BUSINESS -->
+            <h4 class="text-warning fw-bold text-center mb-3">
+              מחלקת עסקים (Business) — {{ flight.price_business }}₪
+            </h4>
+
+            <div class="row row-cols-6 g-2 mb-4 justify-content-center">
+              {% for seat in all_seats %}
+                {% if seat.class == 'Business' %}
+                  {% set key = (seat.row_num, seat.col_num) %}
+                  {% if key not in reserved_set %}
+                    <div class="col" style="max-width: 140px;">
+                      <label class="w-100">
+                        <input class="d-none" type="checkbox" name="selected_seats"
+                               value="{{ seat.row_num }}-{{ seat.col_num }}-Business">
+                        <div class="border rounded text-center py-3 bg-light seat-box">
+                          <div class="fw-bold">{{ seat.row_num }}{{ seat.col_num }}</div>
+                          <div class="small">Business</div>
+                        </div>
+                      </label>
+                    </div>
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            </div>
+
+            <hr class="my-4">
+
+            <!-- ECONOMY -->
+            <h4 class="text-primary fw-bold text-center mb-3">
+              מחלקת תיירים (Economy) — {{ flight.price_economy }}₪
+            </h4>
+
+            <div class="row row-cols-6 g-2 justify-content-center">
+              {% for seat in all_seats %}
+                {% if seat.class == 'Economy' %}
+                  {% set key = (seat.row_num, seat.col_num) %}
+                  {% if key not in reserved_set %}
+                    <div class="col" style="max-width: 140px;">
+                      <label class="w-100">
+                        <input class="d-none" type="checkbox" name="selected_seats"
+                               value="{{ seat.row_num }}-{{ seat.col_num }}-Economy">
+                        <div class="border rounded text-center py-3 bg-light seat-box">
+                          <div class="fw-bold">{{ seat.row_num }}{{ seat.col_num }}</div>
+                          <div class="small">Economy</div>
+                        </div>
+                      </label>
+                    </div>
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mt-4 fw-bold">
+              המשך למילוי פרטים ואישור תשלום
+            </button>
+          </form>
+
+          <script>
+            // הדגשה של מושב שנבחר
+            document.addEventListener("change", function(e) {
+              if (e.target && e.target.name === "selected_seats") {
+                const box = e.target.closest("label")?.querySelector(".seat-box");
+                if (!box) return;
+                if (e.target.checked) {
+                  box.classList.add("border-primary");
+                } else {
+                  box.classList.remove("border-primary");
+                }
+              }
+            });
+          </script>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

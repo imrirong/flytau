@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block title %}ההזמנות שלי - FLYTAU{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow" dir="rtl">
+      <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+          <h1 class="h4 mb-0">היסטוריית ההזמנות שלי</h1>
+
+          <form action="{{ url_for('my_bookings') }}" method="GET" class="d-flex flex-wrap gap-2">
+              <label class="visually-hidden" for="status">סינון לפי סטטוס</label>
+              <select id="status" name="status" class="form-select form-select-sm" style="min-width: 220px;">
+                  <option value="All">כל הסטטוסים</option>
+                  {% for status in statuses %}
+                      <option value="{{ status }}" {% if current_filter == status %}selected{% endif %}>
+                          {% if status == 'Active' %} פעיל
+                          {% elif status == 'Cancelled by Customer' %} ביטול לקוח
+                          {% elif status == 'Cancelled by System' %} ביטול מערכת
+                          {% elif status == 'Performed' %} בוצעה
+                          {% else %} {{ status }}
+                          {% endif %}
+                      </option>
+                  {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-primary btn-sm fw-bold">סנן</button>
+          </form>
+      </div>
+
+      <div class="card-body text-end">
+          {% if bookings %}
+          <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                  <thead class="table-light">
+                      <tr>
+                          <th>מזהה הזמנה</th>
+                          <th>מספר טיסה</th>
+                          <th>מסלול</th>
+                          <th>תאריך ושעה</th>
+                          <th>מושבים</th>
+                          <th>מחיר כולל</th>
+                          <th>סטטוס</th>
+                          <th>פעולות</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for booking in bookings %}
+                      <tr>
+                          <td><strong>{{ booking.booking_id }}</strong></td>
+                          <td>{{ booking.flight_id }}</td>
+                          <td>{{ booking.origin }} ➝ {{ booking.destination }}</td>
+                          <td>
+                              {{ booking.departure_date }}<br>
+                              <small class="text-muted">{{ booking.departure_time }}</small>
+                          </td>
+
+                          <!-- תיקון: הצגת המושבים שהוזמנו -->
+                          <td>
+                              {% if booking.seats_list %}
+                                  {{ booking.seats_list }}
+                              {% else %}
+                                  -
+                              {% endif %}
+                          </td>
+
+                          <td>{{ booking.total_price }}₪</td>
+                          <td>
+                              {% if booking.booking_status == 'Active' %}
+                                  <span class="badge bg-success">פעיל</span>
+                              {% elif booking.booking_status == 'Cancelled by Customer' %}
+                                  <span class="badge bg-warning text-dark">ביטול לקוח</span>
+                              {% elif booking.booking_status == 'Cancelled by System' %}
+                                  <span class="badge bg-danger">ביטול מערכת</span>
+                              {% elif booking.booking_status == 'Performed' %}
+                                  <span class="badge bg-info text-dark">בוצעה</span>
+                              {% else %}
+                                  <span class="badge bg-secondary">{{ booking.booking_status }}</span>
+                              {% endif %}
+                          </td>
+                          <td>
+                              {% if booking.booking_status == 'Active' %}
+                                  <a href="{{ url_for('cancel_booking', booking_id=booking.booking_id) }}"
+                                     class="btn btn-outline-danger btn-sm"
+                                     onclick="return confirm('שים לב: ביטול שנעשה יותר מ-36 שעות לפני הטיסה כרוך בעמלה של 5%. לא ניתן לבטל פחות מ-36 שעות לפני הטיסה. האם להמשיך?');">
+                                      בטל הזמנה
+                                  </a>
+                              {% else %}
+                                  <button class="btn btn-secondary btn-sm" disabled>סגור</button>
+                              {% endif %}
+                          </td>
+                      </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+          {% else %}
+              <div class="text-center py-5">
+                  <p class="lead text-muted">לא נמצאו הזמנות תואמות לסינון.</p>
+                  <a href="{{ url_for('index') }}" class="btn btn-primary fw-bold">הזמן טיסה חדשה</a>
+              </div>
+          {% endif %}
+      </div>
+  </div>
+</div>
+{% endblock %}

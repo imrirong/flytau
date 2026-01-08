@@ -1,0 +1,141 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h4 class="mb-0 text-center">הוספת עובד חדש למאגר</h4>
+            </div>
+            <div class="card-body p-4">
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" id="employeeForm">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">תפקיד</label>
+                        <select name="role" id="roleSelect" class="form-select" required onchange="toggleFields()">
+                            <option value="pilot">טייס</option>
+                            <option value="attendant">דייל/ת</option>
+                            <option value="manager">מנהל</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">תעודת זהות</label>
+                        <input type="text" name="employee_id" class="form-control" required>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label fw-bold">שם פרטי (בעברית בלבד)</label>
+                            <input type="text"
+                                   name="first_name"
+                                   class="form-control"
+                                   pattern="[א-ת\s]+"
+                                   title="נא להזין אותיות בעברית בלבד"
+                                   required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label fw-bold"> שם משפחה (בעברית בלבד)</label>
+                            <input type="text"
+                                   name="last_name"
+                                   class="form-control"
+                                   pattern="[א-ת\s]+"
+                                   title="נא להזין אותיות בעברית בלבד"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">טלפון</label>
+                        <input type="tel"
+                               name="phone"
+                               class="form-control"
+                               pattern="[0-9-]+"
+                               title="ספרות ומקף בלבד"
+                               required>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold">עיר מגורים</label>
+                            <input type="text" name="city" class="form-control" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold">רחוב מגורים</label>
+                            <input type="text" name="street" class="form-control" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">מספר בית</label>
+                            <input type="number" name="house_num" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <!-- חדש: הכשרה לטיסות ארוכות (רק לטייס/דייל) -->
+                    <div class="mb-3" id="qualifiedWrapper" style="display:none;">
+                        <label class="form-label fw-bold">קיימת הכשרה לטיסות ארוכות</label>
+                        <select name="is_qualified" id="qualifiedSelect" class="form-select">
+                            <option value="1">כן</option>
+                            <option value="0">לא</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">תאריך תחילת עבודה</label>
+                        <input type="date" name="start_date" class="form-control" required>
+                    </div>
+
+                    <div class="mb-4" id="passwordWrapper" style="display:none;">
+                        <label class="form-label fw-bold">סיסמה</label>
+                        <input type="password" name="password" id="passwordInput" class="form-control">
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg shadow-sm">שמור והוסף עובד</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="/" class="text-decoration-none text-secondary">חזרה ללוח הבקרה</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFields() {
+        var role = document.getElementById("roleSelect").value;
+
+        // password (רק למנהל)
+        var wrapper = document.getElementById("passwordWrapper");
+        var passInput = document.getElementById("passwordInput");
+
+        // qualification (רק לטייס/דייל)
+        var qualifiedWrapper = document.getElementById("qualifiedWrapper");
+        var qualifiedSelect = document.getElementById("qualifiedSelect");
+
+        if (role === "manager") {
+            wrapper.style.display = "block";
+            passInput.setAttribute("required", "");
+            qualifiedWrapper.style.display = "none";
+            qualifiedSelect.value = "0";
+        } else {
+            wrapper.style.display = "none";
+            passInput.removeAttribute("required");
+            passInput.value = "";
+
+            qualifiedWrapper.style.display = "block";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", toggleFields);
+</script>
+{% endblock %}

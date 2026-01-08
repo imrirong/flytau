@@ -1,0 +1,203 @@
+html, body {
+  direction: rtl;
+  text-align: right;
+  background-color: #f8f9fa;
+  font-family: system-ui, -apple-system, "Segoe UI", "Heebo", "Assistant", Arial, sans-serif;
+}
+
+.container {
+  max-width: 1100px;
+}
+
+.card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.card-header {
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+}
+
+.card,
+.card-body,
+.card-header,
+.alert,
+.table,
+.form-text,
+.form-check-label {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.btn {
+  border-radius: 10px;
+}
+
+.form-control,
+.form-select,
+textarea,
+input {
+  border-radius: 10px;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.form-label {
+  font-weight: 700;
+  text-align: right !important;
+}
+
+.table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table thead th {
+  font-weight: 700;
+  text-align: right !important;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.06);
+}
+
+:root {
+  --focus-ring: 0 0 0 .25rem rgba(13,110,253,.25);
+}
+
+html {
+  scroll-padding-top: 88px;
+}
+
+.btn:focus-visible,
+.form-control:focus,
+.form-select:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.navbar,
+.dropdown-menu {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.navbar .nav-link {
+  border-radius: .75rem;
+}
+
+.navbar .nav-link:hover {
+  background: rgba(13,110,253,.08);
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.brand-text {
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+.app-main {
+  padding-top: 96px;
+}
+
+/* הגדרות רקע לוגו כללי */
+.home-bg {
+  background:
+    linear-gradient(rgba(248, 249, 250, 0.94), rgba(248, 249, 250, 0.94)),
+    url("logo.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 520px;
+  background-attachment: fixed;
+}
+
+/* הגדרות הבאנר החדש (Hero Section) */
+.hero-bg {
+  /* תמונה של מטוס ועננים */
+  background-image: url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
+  background-size: cover;
+  background-position: center;
+  height: 300px;
+  border-radius: 1.25rem;
+  margin-bottom: 2rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.hero-overlay {
+  background-color: rgba(0, 0, 0, 0.35); /* כהה עדין כדי שהטקסט יבלוט */
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-text {
+  color: white;
+  font-weight: 800;
+  font-size: 2.8rem;
+  text-shadow: 2px 2px 10px rgba(0,0,0,0.6);
+  text-align: center;
+  margin: 0;
+  padding: 0 20px;
+  letter-spacing: 0.5px;
+}
+
+.page-title {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.main-header-logo {
+  height: 78px;
+  width: auto;
+}
+
+.flight-card {
+  background-color: rgba(255, 255, 255, 0.98);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.flight-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.12);
+}
+
+/* 🔴 הסרת אייקונים רק מכרטיסי טיסות */
+.flight-card .bi,
+.flight-card [class^="bi-"],
+.flight-card [class*=" bi-"] {
+  display: none !important;
+}
+
+.manager-btn {
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-align: center;
+  border-width: 2px;
+  border-radius: 1rem;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.manager-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 .75rem 1.2rem rgba(0,0,0,.12);
+}

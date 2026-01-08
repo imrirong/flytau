@@ -1,0 +1,148 @@
+{% extends "layout.html" %}
+
+{% block title %}דוחות ניהוליים{% endblock %}
+
+{% block content %}
+<div class="container mb-5">
+  <h1 class="h3 mb-4 text-center fw-bold text-primary">דוחות ניהוליים</h1>
+
+  <!-- דוח 1 -->
+  <section class="card mb-5 shadow-sm">
+    <div class="card-header bg-danger text-white">
+      <h2 class="h5 mb-0">דוח 1: סיכום פעילות חודשי לכל מטוס בצי לטיסות שבוצעו/בוטלו עד היום + נתיב שולט</h2>
+    </div>
+    <div class="card-body">
+      {% if report1 %}
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered text-center align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>מזהה מטוס</th>
+                <th>חודש (YYYY-MM)</th>
+                <th>טיסות שבוצעו</th>
+                <th>טיסות שבוטלו</th>
+                <th>אחוז ניצולת</th>
+                <th>נתיב שולט</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in report1 %}
+              <tr>
+                <td>{{ row['aircraft_id'] }}</td>
+                <td dir="ltr">{{ row['Month'] }}</td>
+                <td>{{ row['Flights_Performed'] }}</td>
+                <td>{{ row['Flights_Cancelled'] }}</td>
+                <td dir="ltr">{{ row['Utilization_Pct'] }}%</td>
+                <td dir="ltr">
+                  {% if row['Dominant_Route'] %}
+                    {{ row['Dominant_Route'] }}
+                  {% else %}
+                    <span class="text-muted">אין נתון</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-center text-muted mb-0">אין נתונים להצגה</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- דוח 2 -->
+  <section class="card mb-5 shadow-sm">
+    <div class="card-header bg-warning text-dark">
+      <h2 class="h5 mb-0">דוח 2: שיעור ביטול הזמנות לפי חודש</h2>
+    </div>
+    <div class="card-body">
+      {% if report2 %}
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered text-center align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>חודש (YYYY-MM)</th>
+                <th>סה״כ הזמנות</th>
+                <th>כמות ביטולים</th>
+                <th>שיעור ביטול</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in report2 %}
+              <tr>
+                <td dir="ltr">{{ row['Booking_Month'] }}</td>
+                <td>{{ row['Total_Bookings'] }}</td>
+                <td>{{ row['Cancelled_Count'] }}</td>
+                <td dir="ltr">{{ row['Cancellation_Rate'] }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-center text-muted mb-0">אין נתונים להצגה</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- דוח 3 -->
+  <section class="card mb-5 shadow-sm">
+    <div class="card-header bg-info text-white">
+      <h2 class="h5 mb-0">דוח 3: הכנסות לפי גודל מטוס, יצרנית ומחלקה</h2>
+    </div>
+    <div class="card-body">
+      {% if report3 %}
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered text-center align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>יצרן</th>
+                <th>גודל</th>
+                <th>מחלקה</th>
+                <th>סך הכנסות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in report3 %}
+              <tr>
+                <td>{{ row['Manufacturer'] }}</td>
+                <td>{{ row['Size'] }}</td>
+                <td>
+                  {% if row['Class'] == 'Business' %}
+                    <span class="badge bg-warning text-dark">עסקים</span>
+                  {% else %}
+                    <span class="badge bg-secondary">תיירים</span>
+                  {% endif %}
+                </td>
+                <td class="fw-bold">{{ row['Total_Revenue'] }} ₪</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-center text-muted mb-0">אין נתונים להצגה</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- דוח 4 -->
+  <section class="card mb-5 shadow-sm">
+    <div class="card-header bg-success text-white">
+      <h2 class="h5 mb-0">דוח 4: ממוצע תפוסת טיסות שהתקיימו</h2>
+    </div>
+    <div class="card-body text-center">
+      {% if average_occupancy is not none %}
+        <p class="lead mb-0">
+          ממוצע תפוסה לטיסות שבוצעו:
+          <strong dir="ltr">{{ "%.2f"|format(average_occupancy) }}%</strong>
+        </p>
+      {% else %}
+        <p class="text-muted mb-0">אין נתונים להצגה</p>
+      {% endif %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}

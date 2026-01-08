@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+
+{% block title %}הרשמה - FLYTAU{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+      <div class="col-md-8">
+          <div class="card shadow" dir="rtl">
+              <div class="card-header bg-primary text-white text-end">
+                  <h1 class="h4 mb-0">הרשמה</h1>
+              </div>
+              <div class="card-body text-end">
+                  <form method="post">
+                      <div class="row mb-3">
+                          <div class="col">
+                              <label class="form-label">שם פרטי <small class="text-muted">(באנגלית)</small></label>
+                              <input type="text"
+                                     name="first_name"
+                                     class="form-control"
+                                     pattern="[a-zA-Z\s]+"
+                                     oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')"
+                                     title="נא להזין אותיות באנגלית בלבד"
+                                     required>
+                          </div>
+                          <div class="col">
+                              <label class="form-label">שם משפחה <small class="text-muted">(באנגלית)</small></label>
+                              <input type="text"
+                                     name="last_name"
+                                     class="form-control"
+                                     pattern="[a-zA-Z\s]+"
+                                     oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')"
+                                     title="נא להזין אותיות באנגלית בלבד"
+                                     required>
+                          </div>
+                      </div>
+
+                      <div class="mb-3">
+                          <label class="form-label">כתובת אימייל</label>
+                          <input type="email" name="email" class="form-control" required>
+                      </div>
+
+                      <div class="row mb-3">
+                          <div class="col">
+                              <label class="form-label">מספר דרכון</label>
+                              <input type="text" name="passport" class="form-control" required>
+                          </div>
+                          <div class="col">
+                              <label class="form-label">תאריך לידה</label>
+                              <input type="date" name="birth_date" class="form-control" required>
+                          </div>
+                      </div>
+
+                      <div class="mb-3">
+                          <label class="form-label">סיסמה</label>
+                          <input type="password" name="password" class="form-control" required>
+                      </div>
+
+                      <hr>
+                      <h2 class="h5">מספרי טלפון</h2>
+                      <div id="phone-container">
+                          <div class="input-group mb-2">
+                              <input type="tel" name="phones" class="form-control" placeholder="מספר טלפון" pattern="[0-9-]+" title="ספרות ומקף בלבד" required>
+                          </div>
+                      </div>
+                      <button type="button" class="btn btn-secondary btn-sm mb-3" onclick="addPhone()">+ הוסף מספר טלפון נוסף</button>
+
+                      <div class="d-grid">
+                          <button type="submit" class="btn btn-primary btn-block fw-bold">הירשם</button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+          <div class="text-center mt-3">
+              <a href="/login">כבר יש לך חשבון? התחבר כאן</a>
+          </div>
+      </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      var today = new Date().toISOString().split('T')[0];
+      document.getElementsByName("birth_date")[0].setAttribute('max', today);
+  });
+
+  function addPhone() {
+      const container = document.getElementById('phone-container');
+      const div = document.createElement('div');
+      div.className = 'input-group mb-2';
+      div.innerHTML = `
+          <input type="tel" name="phones" class="form-control" placeholder="מספר טלפון נוסף" pattern="[0-9-]+" title="ספרות ומקף בלבד">
+          <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">הסר</button>
+      `;
+      container.appendChild(div);
+  }
+</script>
+{% endblock %}

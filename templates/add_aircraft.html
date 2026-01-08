@@ -1,0 +1,121 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-end">
+                <h4 class="mb-0">הוספת מטוס חדש למערכת</h4>
+            </div>
+            <div class="card-body text-end">
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category if category != 'error' else 'danger' }} mb-3">
+                        {{ message }}
+                      </div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                <form method="POST">
+
+                    <h5 class="text-primary mb-3">פרטי המטוס</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">מספר זיהוי מטוס (ID)</label>
+                        <input type="number" name="aircraft_id" class="form-control" required>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">יצרן</label>
+                            <select name="manufacturer" class="form-select" required>
+                                <option value="Daso">Daso</option>
+                                <option value="Airbus">Airbus</option>
+                                <option value="Boeing">Boeing</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">גודל</label>
+                            <select name="size" id="sizeSelect" class="form-select" required onchange="toggleSeatConfig()">
+                                <option value="Small">קטן (Small)</option>
+                                <option value="Big">גדול (Big)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">תאריך רכישה</label>
+                        <input type="date" name="purchase_date" class="form-control" required>
+                    </div>
+
+                    <hr>
+                    <h5 class="text-primary mb-3">הגדרת מושבים</h5>
+
+                    <div class="alert alert-info">
+                        נא להזין את מספר השורות ומספר העמודות בכל מחלקה.
+                        <br>
+                        מספר עמודות יומר אוטומטית לאותיות (לדוגמה: 3 עמודות = A, B, C).
+                    </div>
+
+                    <div id="businessConfig" style="display: none;" class="p-3 mb-3 bg-light border rounded">
+                        <h6 class="fw-bold text-warning">מחלקה ראשונה / עסקים (Business)</h6>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">מספר שורות (1-20)</label>
+                                <input type="number" name="bus_rows" class="form-control" min="1" max="20">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">מספר עמודות (1-10)</label>
+                                <input type="number" name="bus_cols" class="form-control" min="1" max="10">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 mb-3 bg-light border rounded">
+                        <h6 class="fw-bold text-success">מחלקת תיירים (Economy)</h6>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">מספר שורות (1-20)</label>
+                                <input type="number" name="eco_rows" class="form-control" min="1" max="20" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">מספר עמודות (1-10)</label>
+                                <input type="number" name="eco_cols" class="form-control" min="1" max="10" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">שמור מטוס ומושבים</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <a href="/" class="text-secondary">ביטול וחזרה לראשי</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleSeatConfig() {
+        var size = document.getElementById("sizeSelect").value;
+        var busConfig = document.getElementById("businessConfig");
+        var inputs = busConfig.getElementsByTagName("input");
+
+        if (size === "Big") {
+            busConfig.style.display = "block";
+            for (var i = 0; i < inputs.length; i++) inputs[i].required = true;
+        } else {
+            busConfig.style.display = "none";
+            for (var i = 0; i < inputs.length; i++) inputs[i].required = false;
+            for (var i = 0; i < inputs.length; i++) inputs[i].value = "";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", toggleSeatConfig);
+</script>
+{% endblock %}

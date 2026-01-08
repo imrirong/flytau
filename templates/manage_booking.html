@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block title %}ניהול הזמנה (אורח) - FLYTAU{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-end">
+                <h4 class="mb-0">ניהול הזמנה כאורח</h4>
+            </div>
+
+            <div class="card-body text-end">
+                <form method="post">
+
+                    <div class="mb-3">
+                        <label class="form-label w-100">מספר הזמנה</label>
+                        <input type="text" name="booking_id" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label w-100">אימייל</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary fw-bold">חפש הזמנה</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

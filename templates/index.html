@@ -1,0 +1,149 @@
+{% extends "layout.html" %}
+
+{% block title %}FLYTAU - דף הבית{% endblock %}
+{% block body_class %}home-bg{% endblock %}
+
+{% block content %}
+
+{% if not session.user_id or session.role != 'manager' %}
+<div class="container mb-4">
+    <section class="hero-bg">
+        <div class="hero-overlay">
+            <h2 class="hero-text">החוויה שלך מתחילה כאן, איתנו</h2>
+        </div>
+    </section>
+</div>
+{% endif %}
+
+<div class="container">
+
+    <header class="text-center py-3 mb-4">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="FLYTAU Logo" class="main-header-logo">
+        <h1 class="display-6 text-primary page-title mb-1">FLYTAU</h1>
+
+    </header>
+
+    <div class="card shadow mb-5 bg-white" style="border-radius: 1.25rem;">
+        <div class="card-body p-4">
+            <h2 class="h5 mb-4 fw-bold text-primary">חיפוש טיסות</h2>
+
+            <form action="/search" method="POST" class="row g-3 align-items-end">
+
+                <div class="col-md-3">
+                    <label class="form-label">מקור</label>
+                    <select name="origin" class="form-select form-select-lg">
+                        <option value="">הכל</option>
+                        {% for origin in origins %}
+                        <option value="{{ origin.origin }}">{{ origin.origin }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">יעד</label>
+                    <select name="destination" class="form-select form-select-lg">
+                        <option value="">הכל</option>
+                        {% for dest in destinations %}
+                        <option value="{{ dest.destination }}">{{ dest.destination }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">תאריך</label>
+                    <input type="date" name="date_from" class="form-control form-control-lg" min="{{ date_today }}">
+                </div>
+
+                {% if session.role == 'manager' %}
+                <div class="col-md-2">
+                    <label class="form-label">סטטוס</label>
+                    <select name="status" class="form-select form-select-lg">
+                        <option value="">הכל</option>
+                        <option value="Active">Active</option>
+                        <option value="Full">Full</option>
+                        <option value="Cancelled">Cancelled</option>
+                        <option value="Performed">Performed</option>
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="col-md-{{ '2' if session.role == 'manager' else '3' }}">
+                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold text-nowrap">
+                        חפש טיסה
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% if flights %}
+        {% for flight in flights %}
+        <div class="col-md-4">
+            <div class="card h-100 flight-card">
+               <div class="card-header text-white d-flex justify-content-between align-items-center
+    {% if flight.flight_status == 'Cancelled' %}bg-danger
+    {% elif flight.flight_status == 'Performed' %}bg-secondary
+    {% elif flight.flight_status == 'Full' %}bg-warning text-dark
+    {% else %}bg-success{% endif %}">
+
+    <span>מספר טיסה : {{ flight.flight_id }}</span>
+
+    <span class="badge
+        {% if flight.flight_status == 'Cancelled' %}bg-light text-danger
+        {% elif flight.flight_status == 'Performed' %}bg-light text-dark
+        {% elif flight.flight_status == 'Full' %}bg-dark
+        {% else %}bg-light text-success{% endif %}">
+        {{ flight.flight_status }}
+    </span>
+</div>
+
+
+                <div class="card-body">
+                    <h5 class="text-center text-primary">
+                        {{ flight.origin }} → {{ flight.destination }}
+                    </h5>
+
+                    <p><strong>תאריך:</strong> {{ flight.departure_date }}</p>
+                    <p><strong>שעה:</strong> {{ flight.departure_time }}</p>
+                    <p><strong>משך:</strong> {{ flight.duration }} דקות</p>
+                    <p><strong>מושבים פנויים:</strong> {{ flight.available_seats }}</p>
+                </div>
+
+                <div class="card-footer bg-transparent border-0">
+                    {% if session.role == 'manager' %}
+                        {% if flight.flight_status in ['Active', 'Full'] %}
+                            <a href="{{ url_for('cancel_flight', flight_id=flight.flight_id) }}"
+                               class="btn btn-outline-danger w-100"
+                               onclick="return confirm('האם לבטל את הטיסה? פעולה זו תבטל את כל ההזמנות ותאפס את המחיר ל-0.');">
+                                ביטול טיסה
+                            </a>
+                            <div class="text-muted small mt-2 text-center">ניתן לבטל עד 72 שעות לפני ההמראה</div>
+                        {% else %}
+                            <button class="btn btn-secondary w-100" disabled>טיסה לא פעילה</button>
+                        {% endif %}
+                    {% else %}
+                        {% if flight.flight_status == 'Active' and flight.available_seats > 0 %}
+                        <a href="{{ url_for('book_flight', flight_id=flight.flight_id) }}"
+                           class="btn btn-primary w-100">הזמן עכשיו</a>
+                        {% else %}
+                        <button class="btn btn-secondary w-100" disabled>לא ניתן להזמין</button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-warning text-center">
+                לא נמצאו טיסות תואמות לחיפוש שלך.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
