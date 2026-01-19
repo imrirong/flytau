@@ -1,3 +1,10 @@
+{#
+  my_bookings.html
+
+  Displays the logged-in user's booking history in a table. Supports filtering bookings by status
+  via a GET parameter, and allows cancellation only for bookings that are currently Active.
+#}
+
 {% extends "layout.html" %}
 
 {% block title %}ההזמנות שלי - FLYTAU{% endblock %}
@@ -54,7 +61,6 @@
                               <small class="text-muted">{{ booking.departure_time }}</small>
                           </td>
 
-                          <!-- תיקון: הצגת המושבים שהוזמנו -->
                           <td>
                               {% if booking.seats_list %}
                                   {{ booking.seats_list }}

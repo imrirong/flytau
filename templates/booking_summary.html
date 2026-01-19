@@ -1,3 +1,11 @@
+{#
+  booking_summary.html
+
+  This page summarizes the selected flight and seats (including total price) and collects booking
+  details for guests. Logged-in users only need to confirm the payment. Multiple phone numbers can
+  be added/removed dynamically before submitting via POST to finalize the booking.
+#}
+
 {% extends "layout.html" %}
 {% block title %}אישור הזמנה ותשלום - FLYTAU{% endblock %}
 
@@ -5,7 +13,6 @@
 <div class="container mt-4" dir="rtl">
   <div class="row g-4">
 
-    <!-- פרטי טיסה + סיכום מושבים -->
     <div class="col-lg-5">
       <div class="card shadow-sm">
         <div class="card-header bg-primary text-white text-end">
@@ -122,6 +129,11 @@
             </button>
           </form>
 
+          {#
+            Client-side UX:
+            Allows adding/removing multiple phone inputs for guest bookings
+            (server receives multiple "phones" values).
+          #}
           <script>
             function addPhone() {
               const wrap = document.getElementById("phonesWrap");

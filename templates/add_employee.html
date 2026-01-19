@@ -1,3 +1,12 @@
+{#
+  add_employee.html
+
+  This page provides a form for adding a new employee to the system (pilots, attendants, or managers).
+  It collects personal/contact details and dynamically shows extra fields:
+  - Manager: requires a password.
+  - Pilot/Attendant: shows the long-flight qualification field.
+#}
+
 {% extends "layout.html" %}
 {% block content %}
 <div class="row justify-content-center mt-4">
@@ -78,7 +87,6 @@
                         </div>
                     </div>
 
-                    <!-- חדש: הכשרה לטיסות ארוכות (רק לטייס/דייל) -->
                     <div class="mb-3" id="qualifiedWrapper" style="display:none;">
                         <label class="form-label fw-bold">קיימת הכשרה לטיסות ארוכות</label>
                         <select name="is_qualified" id="qualifiedSelect" class="form-select">
@@ -110,6 +118,11 @@
     </div>
 </div>
 
+{#
+  JavaScript logic:
+  - If role == "manager": show password field and make it required; hide qualification field.
+  - Otherwise: hide password and show qualification field for pilot/attendant.
+#}
 <script>
     function toggleFields() {
         var role = document.getElementById("roleSelect").value;

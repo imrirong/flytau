@@ -21,12 +21,19 @@ app = Flask(__name__)
 
 app.secret_key = 'your_secret_key_here'
 
+load_dotenv()
+
 DB_CONFIG = {
     'host': os.getenv('DB_HOST'),
     'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD'),
+    'password': os.getenv('DB_PASS'),
     'database': os.getenv('DB_NAME')
 }
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
 
 
 class DBManager:
@@ -285,8 +292,11 @@ def index():
         flights = []
 
     # Used to populate search dropdowns.
-    destinations = db_manager.fetch_all("SELECT DISTINCT destination FROM Route")
-    origins = db_manager.fetch_all("SELECT DISTINCT origin FROM Route")
+    destinations = db_manager.fetch_all("SELECT DISTINCT destination FROM Route") or []
+    origins = db_manager.fetch_all("SELECT DISTINCT origin FROM Route") or []
+    origins = origins or []  # ONE LINE FIX
+    destinations = destinations or []
+
 
     return render_template(
         'index.html',
@@ -822,48 +832,44 @@ def add_flight():
     """
     Multi-step flow for managers to create a new flight.
 
-    Steps:
-    1) Choose a route + date/time.
-    2) Check aircraft availability (time overlap + long-flight size rule + location continuity).
-    3) Assign crew (qualification + time overlap + location continuity).
-    4) Create flight + persist aircraft/crew assignments.
+    Rules enforced:
+    - Long flight (> 360 minutes): only Big aircraft + only qualified pilots/attendants.
+    - Short flight (<= 360 minutes): any aircraft size (subject to overlap) + any pilots/attendants.
+    - Time overlap checks prevent double-booking resources.
+    - Location continuity checks prevent "teleporting" resources between airports.
     """
-    # Access control: only managers can add flights.
     if session.get('role') != 'manager':
         return redirect(url_for('index'))
 
-    # "step" drives which part of the wizard is executed.
     step = request.form.get('step', '1') if request.method == 'POST' else 1
-
-    # Used by the UI to prevent selecting a date in the past.
     today = date.today().strftime('%Y-%m-%d')
 
-    # Step 1: route selection form.
-    if request.method == 'GET' or step == 1:
+    # Step 1: choose route + date/time
+    if request.method == 'GET' or step == 1 or step == '1':
         routes = db_manager.fetch_all("SELECT * FROM Route")
         return render_template('manage_flights.html', step=1, routes=routes, min_date=today)
 
-    # Step 2: check aircraft availability for the chosen route/date/time.
+    # Step 2: check aircraft availability
     if step == 'check_availability':
         route_id = request.form.get('route_id')
         flight_date = request.form.get('date')
         flight_time = request.form.get('time')
 
-        # Route origin + duration define the flight schedule.
         route = db_manager.fetch_one("SELECT origin, duration FROM Route WHERE route_id = %s", (route_id,))
+        if not route:
+            flash("שגיאה: מסלול לא נמצא", "error")
+            return redirect(url_for('add_flight'))
+
         duration_minutes = int(route['duration'])
         flight_origin = route['origin']
+        is_long_flight = duration_minutes > 360
 
-        # Business rule: long flights (> 360 minutes) require a Big aircraft.
-        size_filter = ""
-        if int(duration_minutes) > 360:
-            size_filter = " AND a.size = 'Big' "
+        # Long flight -> only Big aircraft
+        size_filter = " AND a.size = 'Big' " if is_long_flight else ""
 
-        # New flight time window (departure -> arrival).
         new_start_dt = datetime.strptime(f"{flight_date} {flight_time}", '%Y-%m-%d %H:%M')
         new_end_dt = new_start_dt + timedelta(minutes=duration_minutes)
 
-        # Find aircraft that do NOT overlap with any existing non-cancelled flight.
         time_query = f"""
             SELECT a.* FROM Aircraft a
             WHERE 1=1
@@ -882,7 +888,7 @@ def add_flight():
 
         all_time_available_aircrafts = db_manager.fetch_all(time_query, (new_end_dt, new_start_dt))
 
-        # Additional filter: enforce "location continuity" for aircraft (append-only chain rule).
+        # Enforce location continuity for aircraft
         final_aircrafts = []
         if all_time_available_aircrafts:
             for a in all_time_available_aircrafts:
@@ -898,36 +904,54 @@ def add_flight():
             time=flight_time
         )
 
-    # Step 3: assign pilots and attendants for the selected aircraft and schedule.
+    # Step 3: assign crew
     if step == 'assign_crew':
         route_id = request.form.get('route_id')
         flight_date = request.form.get('date')
         flight_time = request.form.get('time')
         aircraft_id = request.form.get('aircraft_id')
 
-        # Basic form validation.
         if not all([route_id, flight_date, flight_time, aircraft_id]):
             flash("שגיאה: נתונים חסרים, אנא התחל מחדש", "error")
             return redirect(url_for('add_flight'))
 
         aircraft = db_manager.fetch_one("SELECT * FROM Aircraft WHERE aircraft_id = %s", (aircraft_id,))
-
-        # Crew requirement depends on aircraft size.
-        req_pilots = 3 if aircraft['size'] == 'Big' else 2
-        req_attendants = 6 if aircraft['size'] == 'Big' else 3
+        if not aircraft:
+            flash("שגיאה: מטוס לא נמצא", "error")
+            return redirect(url_for('add_flight'))
 
         route = db_manager.fetch_one("SELECT origin, duration FROM Route WHERE route_id = %s", (route_id,))
+        if not route:
+            flash("שגיאה: מסלול לא נמצא", "error")
+            return redirect(url_for('add_flight'))
+
         duration_minutes = int(route['duration'])
         flight_origin = route['origin']
+        is_long_flight = duration_minutes > 360
+
+        # Long flight -> Big aircraft only (extra safety in case someone bypassed step 2)
+        if is_long_flight and aircraft.get('size') != 'Big':
+            flash("שגיאה: טיסה ארוכה דורשת מטוס גדול (Big).", "error")
+            return redirect(url_for('add_flight'))
+
+        # Crew requirement depends on aircraft size (your existing logic)
+        req_pilots = 3 if aircraft['size'] == 'Big' else 2
+        req_attendants = 6 if aircraft['size'] == 'Big' else 3
 
         new_start_dt = datetime.strptime(f"{flight_date} {flight_time}", '%Y-%m-%d %H:%M')
         new_end_dt = new_start_dt + timedelta(minutes=duration_minutes)
 
-        # Find qualified pilots without overlapping flights in that time window.
-        pilots_time_query = """
+        # Qualification filter:
+        # - Long flight: only qualified crew
+        # - Short flight: everyone
+        pilot_qual_filter = "AND p.is_qualified = 1" if is_long_flight else ""
+        attendant_qual_filter = "AND a.is_qualified = 1" if is_long_flight else ""
+
+        pilots_time_query = f"""
             SELECT p.*
             FROM Pilot p
-            WHERE p.is_qualified = 1
+            WHERE 1=1
+              {pilot_qual_filter}
               AND p.employee_id NOT IN (
                   SELECT pf.employee_id
                   FROM Pilots_on_Flights pf
@@ -943,11 +967,11 @@ def add_flight():
               )
         """
 
-        # Find qualified attendants without overlapping flights in that time window.
-        attendants_time_query = """
+        attendants_time_query = f"""
             SELECT a.*
             FROM Flight_Attendant a
-            WHERE a.is_qualified = 1
+            WHERE 1=1
+              {attendant_qual_filter}
               AND a.employee_id NOT IN (
                   SELECT af.employee_id
                   FROM Flight_Attendant_on_Flights af
@@ -966,7 +990,7 @@ def add_flight():
         pilots_time_ok = db_manager.fetch_all(pilots_time_query, (new_end_dt, new_start_dt))
         attendants_time_ok = db_manager.fetch_all(attendants_time_query, (new_end_dt, new_start_dt))
 
-        # Apply the location continuity rule: crew must depart from where their chain ends.
+        # Enforce location continuity for crew
         final_pilots = []
         if pilots_time_ok:
             for p in pilots_time_ok:
@@ -979,10 +1003,9 @@ def add_flight():
                 if check_location_continuity(a['employee_id'], 'attendant', flight_origin, new_start_dt):
                     final_attendants.append(a)
 
-        # Warn the manager if not enough staff are available.
-        missing_msgs = []
+        # Warn if not enough crew is available
         if len(final_pilots) < req_pilots or len(final_attendants) < req_attendants:
-            flash("אין מספיק אנשי צוות זמינים לטיסה שנבחרה. " + " | ".join(missing_msgs), "warning")
+            flash("אין מספיק אנשי צוות זמינים לטיסה שנבחרה.", "warning")
 
         return render_template(
             'manage_flights.html',
@@ -997,7 +1020,7 @@ def add_flight():
             time=flight_time
         )
 
-    # Step 4: persist the new flight + crew assignments.
+    # Step 4: create flight + assignments
     if step == 'create':
         try:
             route_id = request.form.get('route_id')
@@ -1007,25 +1030,51 @@ def add_flight():
             price_eco = request.form.get('price_eco')
             price_bus = request.form.get('price_bus', 0)
 
-            # Selected crew IDs from the UI.
             selected_pilots = request.form.getlist('pilots')
             selected_attendants = request.form.getlist('attendants')
 
+            if not all([route_id, flight_date, flight_time, aircraft_id, price_eco]):
+                flash("שגיאה: נתונים חסרים ביצירת טיסה", "error")
+                return redirect(url_for('add_flight'))
+
             aircraft = db_manager.fetch_one("SELECT * FROM Aircraft WHERE aircraft_id = %s", (aircraft_id,))
+            route = db_manager.fetch_one("SELECT origin, duration FROM Route WHERE route_id = %s", (route_id,))
+            if not aircraft or not route:
+                flash("שגיאה: נתוני מטוס/מסלול לא תקינים", "error")
+                return redirect(url_for('add_flight'))
+
+            duration_minutes = int(route['duration'])
+            is_long_flight = duration_minutes > 360
+
+            # Long flight -> Big aircraft only (extra safety)
+            if is_long_flight and aircraft.get('size') != 'Big':
+                flash("שגיאה: טיסה ארוכה דורשת מטוס גדול (Big).", "error")
+                return redirect(url_for('add_flight'))
+
             req_pilots = 3 if aircraft['size'] == 'Big' else 2
             req_attendants = 6 if aircraft['size'] == 'Big' else 3
 
-            # Enforce exact crew count required by aircraft size.
             if len(selected_pilots) != req_pilots or len(selected_attendants) != req_attendants:
                 flash(f"שגיאה: מספר אנשי הצוות לא תואם. נדרש: {req_pilots} טייסים ו-{req_attendants} דיילים.", "error")
                 return redirect(url_for('add_flight'))
 
-            route = db_manager.fetch_one("SELECT duration FROM Route WHERE route_id = %s", (route_id,))
-            duration_minutes = int(route['duration'])
+            # Long flight -> crew must be qualified (extra safety)
+            if is_long_flight:
+                q_p = db_manager.fetch_one(
+                    f"SELECT COUNT(*) AS cnt FROM Pilot WHERE employee_id IN ({','.join(['%s'] * len(selected_pilots))}) AND is_qualified = 1",
+                    tuple(selected_pilots)
+                )
+                q_a = db_manager.fetch_one(
+                    f"SELECT COUNT(*) AS cnt FROM Flight_Attendant WHERE employee_id IN ({','.join(['%s'] * len(selected_attendants))}) AND is_qualified = 1",
+                    tuple(selected_attendants)
+                )
+                if (q_p and q_p.get('cnt', 0) != len(selected_pilots)) or (q_a and q_a.get('cnt', 0) != len(selected_attendants)):
+                    flash("שגיאה: בטיסה ארוכה חובה לבחור אנשי צוות בעלי הכשרה.", "error")
+                    return redirect(url_for('add_flight'))
+
             new_start_dt = datetime.strptime(f"{flight_date} {flight_time}", '%Y-%m-%d %H:%M')
             new_end_dt = new_start_dt + timedelta(minutes=duration_minutes)
 
-            # Insert the new flight record (arrival_datetime is stored for continuity and overlap checks).
             new_flight_id = db_manager.execute_query("""
                 INSERT INTO Flight (route_id, aircraft_id, departure_date, departure_time, arrival_datetime, flight_status, price_economy, price_business)
                 VALUES (%s, %s, %s, %s, %s, 'Active', %s, %s)
@@ -1035,14 +1084,12 @@ def add_flight():
                 flash("שגיאה: לא נוצר flight_id לטיסה החדשה", "error")
                 return redirect(url_for('add_flight'))
 
-            # Persist pilot assignments.
             for pid in selected_pilots:
                 db_manager.execute_query(
                     "INSERT INTO Pilots_on_Flights (flight_id, employee_id) VALUES (%s, %s)",
                     (new_flight_id, pid)
                 )
 
-            # Persist attendant assignments.
             for aid in selected_attendants:
                 db_manager.execute_query(
                     "INSERT INTO Flight_Attendant_on_Flights (flight_id, employee_id) VALUES (%s, %s)",
@@ -1056,8 +1103,8 @@ def add_flight():
             flash(f"שגיאה ביצירת הטיסה: {str(e)}", "error")
             return redirect(url_for('add_flight'))
 
-    # Fallback (unknown step): restart the flow.
     return redirect(url_for('add_flight'))
+
 
 
 @app.route('/manager/add_aircraft', methods=['GET', 'POST'])

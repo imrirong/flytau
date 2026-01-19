@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>404 - הדף לא נמצא</title>
+
+  <!-- אם את משתמשת ב-Bootstrap בפרויקט, אפשר להשאיר בלי link וזה עדיין יעבוד יפה -->
+  <style>
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", "Heebo", "Assistant", Arial, sans-serif;
+      background:#f8f9fa;
+      color:#212529;
+      direction:rtl;
+      text-align:right;
+    }
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .card{
+      width:min(680px, 100%);
+      background:white;
+      border-radius:16px;
+      box-shadow:0 10px 28px rgba(0,0,0,0.10);
+      padding:28px;
+    }
+    h1{
+      margin:0 0 8px;
+      font-size:28px;
+    }
+    p{
+      margin:0 0 18px;
+      line-height:1.6;
+      color:#495057;
+    }
+    .actions{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    a.btn{
+      display:inline-block;
+      text-decoration:none;
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid #ced4da;
+      background:#0d6efd;
+      color:#fff;
+      font-weight:600;
+    }
+    a.btn.secondary{
+      background:#fff;
+      color:#0d6efd;
+    }
+    .code{
+      display:inline-block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      background:#f1f3f5;
+      border-radius:10px;
+      padding:6px 10px;
+      margin-top:10px;
+      color:#343a40;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>הדף לא נמצא (404)</h1>
+      <p>
+        נראה שהקישור שהוזן לא קיים באתר, או שהדף הועבר/נמחק.
+      </p>
+
+      <div class="actions">
+        <a class="btn" href="{{ url_for('index') }}">חזרה לדף הראשי</a>
+        <a class="btn secondary" href="javascript:history.back()">חזרה אחורה</a>
+      </div>
+
+      <div class="code">FLYTAU</div>
+    </div>
+  </div>
+</body>
+</html>

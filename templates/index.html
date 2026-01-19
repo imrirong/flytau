@@ -1,3 +1,11 @@
+{#
+  index.html
+
+  This is the main page of the system. It shows a flight search form and a list of matching flights.
+  Content is role-based: managers can filter by status and manage/cancel flights, while regular users
+  can book active flights with available seats.
+#}
+
 {% extends "layout.html" %}
 
 {% block title %}FLYTAU - דף הבית{% endblock %}
@@ -33,7 +41,7 @@
                     <label class="form-label">מקור</label>
                     <select name="origin" class="form-select form-select-lg">
                         <option value="">הכל</option>
-                        {% for origin in origins %}
+                        {% for origin in (origins or []) %}
                         <option value="{{ origin.origin }}">{{ origin.origin }}</option>
                         {% endfor %}
                     </select>
