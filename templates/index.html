@@ -59,7 +59,12 @@
 
                 <div class="col-md-3">
                     <label class="form-label">תאריך</label>
-                    <input type="date" name="date_from" class="form-control form-control-lg" min="{{ date_today }}">
+                    <input type="date" name="date_from" class="form-control form-control-lg"
+                        {% if session.get('role') != 'manager' %}
+                        min="{{ date_today }}"
+                        {% endif %}
+                        >
+
                 </div>
 
                 {% if session.role == 'manager' %}
@@ -67,10 +72,10 @@
                     <label class="form-label">סטטוס</label>
                     <select name="status" class="form-select form-select-lg">
                         <option value="">הכל</option>
-                        <option value="Active">Active</option>
-                        <option value="Full">Full</option>
-                        <option value="Cancelled">Cancelled</option>
-                        <option value="Performed">Performed</option>
+                        <option value="Active">פעילה</option>
+                        <option value="Full">מלאה</option>
+                        <option value="Cancelled">בוטלה</option>
+                        <option value="Performed">בוצעה</option>
                     </select>
                 </div>
                 {% endif %}
@@ -98,13 +103,18 @@
 
     <span>מספר טיסה : {{ flight.flight_id }}</span>
 
-    <span class="badge
-        {% if flight.flight_status == 'Cancelled' %}bg-light text-danger
-        {% elif flight.flight_status == 'Performed' %}bg-light text-dark
-        {% elif flight.flight_status == 'Full' %}bg-dark
-        {% else %}bg-light text-success{% endif %}">
-        {{ flight.flight_status }}
-    </span>
+    <span class="status-badge">
+    {% if flight.flight_status == 'Active' %}
+        פעילה
+    {% elif flight.flight_status == 'Full' %}
+        מלאה
+    {% elif flight.flight_status == 'Performed' %}
+        בוצעה
+    {% elif flight.flight_status == 'Cancelled' %}
+        בוטלה
+    {% endif %}
+</span>
+
 </div>
 
 
@@ -115,7 +125,7 @@
 
                     <p><strong>תאריך:</strong> {{ flight.departure_date }}</p>
                     <p><strong>שעה:</strong> {{ flight.departure_time }}</p>
-                    <p><strong>משך:</strong> {{ flight.duration }} דקות</p>
+                    <p><strong>משך הטיסה:</strong> {{ flight.duration }} דקות</p>
                     <p><strong>מושבים פנויים:</strong> {{ flight.available_seats }}</p>
                 </div>
 
