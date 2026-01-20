@@ -1,11 +1,20 @@
 <!doctype html>
+
+<!--
+404 Error Page
+
+Custom error page displayed when a requested page does not exist.
+Handled by Flask's 404 error handler and provides a clear message
+with a link back to the main page to improve user experience.
+-->
+
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>404 - הדף לא נמצא</title>
 
-  <!-- אם את משתמשת ב-Bootstrap בפרויקט, אפשר להשאיר בלי link וזה עדיין יעבוד יפה -->
+
   <style>
     body{
       margin:0;
@@ -72,17 +81,15 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>הדף לא נמצא (404)</h1>
+      <h1>הדף לא נמצא</h1>
       <p>
-        נראה שהקישור שהוזן לא קיים באתר, או שהדף הועבר/נמחק.
+        נראה שהדף המבוקש אינו קיים.
+
       </p>
 
       <div class="actions">
         <a class="btn" href="{{ url_for('index') }}">חזרה לדף הראשי</a>
-        <a class="btn secondary" href="javascript:history.back()">חזרה אחורה</a>
       </div>
-
-      <div class="code">FLYTAU</div>
     </div>
   </div>
 </body>
