@@ -10,6 +10,7 @@ Main rules enforced in the system:
 """
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import mysql.connector
+from contextlib import contextmanager  # ✅ NEW
 import random
 import string
 import re
@@ -18,7 +19,6 @@ import os
 from dotenv import load_dotenv
 
 app = Flask(__name__)
-
 app.secret_key = 'your_secret_key_here'
 
 load_dotenv()
@@ -32,80 +32,72 @@ DB_CONFIG = {
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return render_template('404.html'), 404
-
+    return render_template('404.html')
 
 
 class DBManager:
     """Small helper class for running MySQL queries and returning dict-based rows."""
 
     def __init__(self, config):
-        # Stores DB connection configuration (host/user/password/database).
         self.config = config
 
-    def get_connection(self):
-        """Open a new DB connection (returns None if connection fails)."""
+    @contextmanager
+    def _cursor(self, dictionary=True):
+        """
+        Context manager that opens a DB connection + cursor and ALWAYS closes them.
+        Commits on success, rollbacks on error.
+        """
+        conn = None
+        cursor = None
         try:
             conn = mysql.connector.connect(**self.config)
-            return conn
-        except mysql.connector.Error as err:
-            # Intentionally returning None (caller treats as DB unavailable).
-            return None
+            cursor = conn.cursor(dictionary=dictionary)
+            yield conn, cursor
+            conn.commit()
+        except mysql.connector.Error:
+            if conn:
+                conn.rollback()
+            raise
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def execute_query(self, query, params=None):
         """
         Execute INSERT/UPDATE/DELETE.
         Returns lastrowid for INSERT, or None on failure.
         """
-        conn = self.get_connection()
-        if not conn:
-            return None
-        cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute(query, params or ())
-            conn.commit()
-            return cursor.lastrowid
-        except mysql.connector.Error as err:
+            with self._cursor(dictionary=True) as (conn, cursor):
+                cursor.execute(query, params or ())
+                return cursor.lastrowid
+        except mysql.connector.Error:
             return None
-        finally:
-            cursor.close()
-            conn.close()
 
     def fetch_one(self, query, params=None):
         """Execute SELECT and return a single row (dict) or None if no rows / failure."""
-        conn = self.get_connection()
-        if not conn:
-            return None
-        cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute(query, params or ())
-            result = cursor.fetchone()
-            return result
-        except mysql.connector.Error as err:
+            with self._cursor(dictionary=True) as (conn, cursor):
+                cursor.execute(query, params or ())
+                return cursor.fetchone()
+        except mysql.connector.Error:
             return None
-        finally:
-            cursor.close()
-            conn.close()
 
     def fetch_all(self, query, params=None):
         """Execute SELECT and return all rows (list of dicts) or None on failure."""
-        conn = self.get_connection()
-        if not conn:
-            return None
-        cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute(query, params or ())
-            results = cursor.fetchall()
-            return results
-        except mysql.connector.Error as err:
+            with self._cursor(dictionary=True) as (conn, cursor):
+                cursor.execute(query, params or ())
+                return cursor.fetchall()
+        except mysql.connector.Error:
             return None
-        finally:
-            cursor.close()
-            conn.close()
 
 
 # Global DB access object used across the app.
 db_manager = DBManager(DB_CONFIG)
+
 
 
 def _flight_arrival_expr():
@@ -220,15 +212,15 @@ def update_statuses():
         JOIN (
             SELECT f.flight_id,
                    (SELECT COUNT(*) FROM Seat s WHERE s.aircraft_id = f.aircraft_id) as total_seats,
-                   (SELECT COUNT(*) FROM Reserved_Seat rs 
-                    JOIN Booking b ON rs.booking_id = b.booking_id 
+                   (SELECT COUNT(*) FROM Reserved_Seat rs
+                    JOIN Booking b ON rs.booking_id = b.booking_id
                     WHERE b.flight_id = f.flight_id AND b.booking_status = 'Active') as occupied_seats
             FROM Flight f
             WHERE f.flight_status IN ('Active', 'Full')
         ) as calc ON f.flight_id = calc.flight_id
-        SET f.flight_status = CASE 
-            WHEN calc.occupied_seats >= calc.total_seats THEN 'Full' 
-            ELSE 'Active' 
+        SET f.flight_status = CASE
+            WHEN calc.occupied_seats >= calc.total_seats THEN 'Full'
+            ELSE 'Active'
         END
         WHERE f.flight_status IN ('Active', 'Full')
     """)
@@ -265,7 +257,7 @@ def index():
         query = """
             SELECT f.*, r.origin, r.destination, r.duration,
             (SELECT COUNT(*) FROM Seat s WHERE s.aircraft_id = f.aircraft_id) -
-            (SELECT COUNT(*) FROM Reserved_Seat rs WHERE rs.booking_id IN (SELECT booking_id FROM Booking WHERE flight_id = f.flight_id AND booking_status = 'Active')) 
+            (SELECT COUNT(*) FROM Reserved_Seat rs WHERE rs.booking_id IN (SELECT booking_id FROM Booking WHERE flight_id = f.flight_id AND booking_status = 'Active'))
             as available_seats
             FROM Flight f
             JOIN Route r ON f.route_id = r.route_id
@@ -277,7 +269,7 @@ def index():
         query = """
             SELECT f.*, r.origin, r.destination, r.duration,
             (SELECT COUNT(*) FROM Seat s WHERE s.aircraft_id = f.aircraft_id) -
-            (SELECT COUNT(*) FROM Reserved_Seat rs WHERE rs.booking_id IN (SELECT booking_id FROM Booking WHERE flight_id = f.flight_id AND booking_status = 'Active')) 
+            (SELECT COUNT(*) FROM Reserved_Seat rs WHERE rs.booking_id IN (SELECT booking_id FROM Booking WHERE flight_id = f.flight_id AND booking_status = 'Active'))
             as available_seats
             FROM Flight f
             JOIN Route r ON f.route_id = r.route_id
@@ -332,7 +324,7 @@ def search_flights():
         query = """
             SELECT f.*, r.origin, r.destination, r.duration,
             (SELECT COUNT(*) FROM Seat s WHERE s.aircraft_id = f.aircraft_id) -
-            (SELECT COUNT(*) FROM Reserved_Seat rs WHERE rs.booking_id IN (SELECT booking_id FROM Booking WHERE flight_id = f.flight_id AND booking_status = 'Active')) 
+            (SELECT COUNT(*) FROM Reserved_Seat rs WHERE rs.booking_id IN (SELECT booking_id FROM Booking WHERE flight_id = f.flight_id AND booking_status = 'Active'))
             as available_seats
             FROM Flight f
             JOIN Route r ON f.route_id = r.route_id
@@ -342,7 +334,7 @@ def search_flights():
         query = """
             SELECT f.*, r.origin, r.destination, r.duration,
             (SELECT COUNT(*) FROM Seat s WHERE s.aircraft_id = f.aircraft_id) -
-            (SELECT COUNT(*) FROM Reserved_Seat rs WHERE rs.booking_id IN (SELECT booking_id FROM Booking WHERE flight_id = f.flight_id AND booking_status = 'Active')) 
+            (SELECT COUNT(*) FROM Reserved_Seat rs WHERE rs.booking_id IN (SELECT booking_id FROM Booking WHERE flight_id = f.flight_id AND booking_status = 'Active'))
             as available_seats
             FROM Flight f
             JOIN Route r ON f.route_id = r.route_id
@@ -786,8 +778,8 @@ def cancel_booking(booking_id):
         seats_query = """
             SELECT rs.row_num, rs.col_num, s.class
             FROM Reserved_Seat rs
-            JOIN Seat s ON rs.aircraft_id = s.aircraft_id 
-            AND rs.row_num = s.row_num 
+            JOIN Seat s ON rs.aircraft_id = s.aircraft_id
+            AND rs.row_num = s.row_num
             AND rs.col_num = s.col_num
             WHERE rs.booking_id = %s
             ORDER BY rs.row_num, rs.col_num
@@ -804,9 +796,9 @@ def cancel_booking(booking_id):
 
     # Update booking status and price (fee remains as the charged amount).
     db_manager.execute_query("""
-        UPDATE Booking 
-        SET booking_status = 'Cancelled by Customer', 
-            total_price = %s 
+        UPDATE Booking
+        SET booking_status = 'Cancelled by Customer',
+            total_price = %s
         WHERE booking_id = %s
     """, (cancellation_fee, booking_id))
 
@@ -880,7 +872,7 @@ def add_flight():
                 WHERE f.flight_status != 'Cancelled'
                 AND (
                     TIMESTAMP(f.departure_date, f.departure_time) < %s
-                    AND 
+                    AND
                     ADDTIME(TIMESTAMP(f.departure_date, f.departure_time), SEC_TO_TIME(r.duration * 60)) > %s
                 )
             )
@@ -1324,7 +1316,7 @@ def cancel_flight(flight_id):
 
     # Cancel all active bookings related to this flight
     db_manager.execute_query("""
-        UPDATE Booking 
+        UPDATE Booking
         SET booking_status = 'Cancelled by System',
             total_price = 0
         WHERE flight_id = %s AND booking_status = 'Active'
@@ -1332,7 +1324,7 @@ def cancel_flight(flight_id):
 
     # Remove all reserved seats for the cancelled flight
     db_manager.execute_query("""
-        DELETE rs FROM Reserved_Seat rs 
+        DELETE rs FROM Reserved_Seat rs
         INNER JOIN Booking b ON rs.booking_id = b.booking_id
         WHERE b.flight_id = %s
     """, (flight_id,))
@@ -1358,23 +1350,23 @@ def reports():
 
     # Report 1: Monthly summary per aircraft
     query1 = """
-        SELECT 
-            Stats.aircraft_id, 
-            Stats.Month, 
+        SELECT
+            Stats.aircraft_id,
+            Stats.Month,
             Stats.Flights_Performed,
             Stats.Flights_Cancelled,
             ROUND((Stats.performed_minutes / 60.0) / (30 * 24) * 100, 2) AS Utilization_Pct,
             (SELECT CONCAT(r.origin, '-', r.destination)
              FROM Flight as f
              JOIN Route as r ON f.route_id = r.route_id
-             WHERE f.aircraft_id = Stats.aircraft_id 
+             WHERE f.aircraft_id = Stats.aircraft_id
                AND DATE_FORMAT(f.departure_date, '%Y-%m') = Stats.Month
                AND f.flight_status = 'Performed'
              GROUP BY r.origin, r.destination
              ORDER BY COUNT(*) DESC
              LIMIT 1) AS Dominant_Route
         FROM (
-            SELECT 
+            SELECT
                 f.aircraft_id,
                 DATE_FORMAT(f.departure_date, '%Y-%m') AS Month,
                 SUM(CASE WHEN f.flight_status = 'Performed' THEN 1 ELSE 0 END) AS Flights_Performed,
@@ -1391,7 +1383,7 @@ def reports():
 
     # Report 2: Monthly booking cancellation rate
     query2 = """
-        SELECT 
+        SELECT
             DATE_FORMAT(booking_datetime, '%Y-%m') AS Booking_Month,
             COUNT(*) AS Total_Bookings,
             SUM(CASE WHEN booking_status LIKE 'Cancel%' THEN 1 ELSE 0 END) AS Cancelled_Count,
@@ -1407,12 +1399,12 @@ def reports():
 
     # Report 3: Revenue by aircraft and seat class
     query3 = """
-        SELECT 
+        SELECT
             A.size AS Size,
             A.manufacturer AS Manufacturer,
             S.class AS Class,
             COALESCE(SUM(
-                CASE 
+                CASE
                     WHEN S.class = 'Economy' THEN F.price_economy
                     WHEN S.class = 'Business' THEN F.price_business
                     ELSE 0
@@ -1420,11 +1412,11 @@ def reports():
             ), 0) AS Total_Revenue
         FROM Aircraft AS A
         JOIN Seat AS S ON A.aircraft_id = S.aircraft_id
-        LEFT JOIN Reserved_Seat RS 
-               ON S.aircraft_id = RS.aircraft_id 
-              AND S.row_num = RS.row_num 
+        LEFT JOIN Reserved_Seat RS
+               ON S.aircraft_id = RS.aircraft_id
+              AND S.row_num = RS.row_num
               AND S.col_num = RS.col_num
-        LEFT JOIN Booking AS B 
+        LEFT JOIN Booking AS B
                ON RS.booking_id = B.booking_id
               AND B.booking_status IN ('Active', 'Performed', 'Cancelled by Customer')
         LEFT JOIN Flight AS F ON B.flight_id = F.flight_id
@@ -1437,17 +1429,17 @@ def reports():
     query4 = """
         SELECT AVG((occupied_seats * 100.0) / total_seats) AS average_occupancy
         FROM (
-            SELECT 
+            SELECT
                 f.flight_id,
-                (SELECT COUNT(*) 
-                 FROM Seat AS s 
+                (SELECT COUNT(*)
+                 FROM Seat AS s
                  WHERE s.aircraft_id = f.aircraft_id) AS total_seats,
-                (SELECT COUNT(*) 
-                 FROM Reserved_Seat rs 
+                (SELECT COUNT(*)
+                 FROM Reserved_Seat rs
                  JOIN Booking b ON rs.booking_id = b.booking_id
-                 WHERE b.flight_id = f.flight_id 
+                 WHERE b.flight_id = f.flight_id
                    AND b.booking_status = 'Performed') AS occupied_seats
-            FROM Flight f 
+            FROM Flight f
             WHERE f.flight_status = 'Performed'
         ) AS calc_table
     """
@@ -1495,9 +1487,9 @@ def manage_booking_guest():
             seats_query = """
                 SELECT rs.row_num, rs.col_num, s.class
                 FROM Reserved_Seat rs
-                JOIN Seat s 
-                  ON rs.aircraft_id = s.aircraft_id 
-                 AND rs.row_num = s.row_num 
+                JOIN Seat s
+                  ON rs.aircraft_id = s.aircraft_id
+                 AND rs.row_num = s.row_num
                  AND rs.col_num = s.col_num
                 WHERE rs.booking_id = %s
                 ORDER BY rs.row_num, rs.col_num
@@ -1510,11 +1502,4 @@ def manage_booking_guest():
     # Initial GET request: show booking lookup form
     return render_template('manage_booking.html')
 
-
-if __name__ == '__main__':
-    """
-    Application entry point.
-    Runs the Flask development server.
-    """
-    app.run(debug=True)
 
